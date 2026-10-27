@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CACHE = "20261027b";
+  const CACHE = "20261027c";
   const STORAGE_KEY = "furniture-design-lite-floor-v1";
 
   const FURNITURE = [
@@ -53,15 +53,20 @@
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const on = (el, ev, fn, opts) => {
+    if (el) el.addEventListener(ev, fn, opts);
+  };
 
   const views = {
     photo: $("#view-photo"),
     floor: $("#view-floor"),
+    room3d: $("#view-room3d"),
     about: $("#view-about"),
   };
 
   const photoInput = $("#photoInput");
   const photoInputReplace = $("#photoInputReplace");
+  const photoPickBtn = $("#photoPickBtn");
   const uploadZone = $("#uploadZone");
   const uploadHero = $("#uploadHero");
   const immersiveCompare = $("#immersiveCompare");
@@ -81,32 +86,39 @@
   let activeView = "photo";
 
   function syncImmersiveChrome() {
-    const on =
+    const onImmersive =
       activeView === "photo" &&
       immersiveCompare &&
       !immersiveCompare.hidden;
-    document.body.classList.toggle("mode-immersive", on);
+    document.body.classList.toggle("mode-immersive", !!onImmersive);
+  }
+
+  function notifyViewChange(view) {
+    try {
+      window.dispatchEvent(new CustomEvent("fdl:view", { detail: { view } }));
+    } catch (_) { /* ignore */ }
   }
 
   $$(".nav-tabs button").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    on(btn, "click", () => {
       const view = btn.dataset.view;
       activeView = view;
       $$(".nav-tabs button").forEach((b) => b.classList.toggle("active", b === btn));
       Object.entries(views).forEach(([key, el]) => {
-        const on = key === view;
-        el.hidden = !on;
-        el.classList.toggle("active", on);
+        if (!el) return;
+        const show = key === view;
+        el.hidden = !show;
+        el.classList.toggle("active", show);
       });
       syncImmersiveChrome();
+      notifyViewChange(view);
     });
   });
 
   function setHasPhoto(has) {
-    if (uploadHero) uploadHero.hidden = has;
+    if (uploadHero) uploadHero.hidden = !!has;
     if (immersiveCompare) immersiveCompare.hidden = !has;
     syncImmersiveChrome();
-    // Enable dock style cards; tease stays disabled
     $$("#styleRow .style-card").forEach((c) => {
       c.disabled = false;
     });
@@ -126,14 +138,25 @@
     }
   }
 
+  function openFilePicker(input) {
+    if (!input) return;
+    try {
+      input.value = "";
+      input.click();
+    } catch (_) { /* ignore */ }
+  }
+
   function loadFile(file) {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file || !String(file.type || "").startsWith("image/")) {
+      if (file) alert("請揀圖片檔（JPG／PNG）。");
+      return;
+    }
     revokeUrl();
     sourceObjectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       sourceImage = img;
-      beforeImg.src = sourceObjectUrl;
+      if (beforeImg) beforeImg.src = sourceObjectUrl;
       setHasPhoto(true);
       renderSuggestion();
     };
@@ -143,65 +166,81 @@
     img.src = sourceObjectUrl;
   }
 
-  photoInput.addEventListener("change", (e) => {
+  on(photoInput, "change", (e) => {
     const file = e.target.files && e.target.files[0];
     loadFile(file);
   });
-  if (photoInputReplace) {
-    photoInputReplace.addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
+  on(photoInputReplace, "change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    loadFile(file);
+  });
+  on(photoPickBtn, "click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openFilePicker(photoInput);
+  });
+
+  if (uploadZone) {
+    ["dragenter", "dragover"].forEach((ev) => {
+      on(uploadZone, ev, (e) => {
+        e.preventDefault();
+        uploadZone.classList.add("dragover");
+      });
+    });
+    ["dragleave", "drop"].forEach((ev) => {
+      on(uploadZone, ev, (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove("dragover");
+      });
+    });
+    on(uploadZone, "drop", (e) => {
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       loadFile(file);
     });
   }
 
-  ["dragenter", "dragover"].forEach((ev) => {
-    uploadZone.addEventListener(ev, (e) => {
-      e.preventDefault();
-      uploadZone.classList.add("dragover");
-    });
-  });
-  ["dragleave", "drop"].forEach((ev) => {
-    uploadZone.addEventListener(ev, (e) => {
-      e.preventDefault();
-      uploadZone.classList.remove("dragover");
-    });
-  });
-  uploadZone.addEventListener("drop", (e) => {
-    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    loadFile(file);
-  });
-
   $$(".style-card").forEach((card) => {
-    card.addEventListener("click", () => {
+    on(card, "click", () => {
       if (card.disabled) return;
       setStyleActive(card.dataset.style);
       if (sourceImage) renderSuggestion();
     });
   });
 
-  $("#regenBtn").addEventListener("click", () => {
+  on($("#regenBtn"), "click", () => {
     if (sourceImage) renderSuggestion();
   });
-
-  $("#aiHelpBtn").addEventListener("click", () => {
-    aiHelpBox.hidden = !aiHelpBox.hidden;
+  on($("#aiHelpBtn"), "click", () => {
+    if (aiHelpBox) aiHelpBox.hidden = !aiHelpBox.hidden;
   });
-
-  $("#clearPhotoBtn").addEventListener("click", () => {
+  on($("#clearPhotoBtn"), "click", () => {
     revokeUrl();
     sourceImage = null;
-    beforeImg.removeAttribute("src");
-    const ctx = afterCanvas.getContext("2d");
-    if (ctx) ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
-    placementLabels.innerHTML = "";
-    photoInput.value = "";
+    if (beforeImg) beforeImg.removeAttribute("src");
+    if (afterCanvas) {
+      const ctx = afterCanvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
+    }
+    if (placementLabels) placementLabels.innerHTML = "";
+    if (photoInput) photoInput.value = "";
     if (photoInputReplace) photoInputReplace.value = "";
-    aiHelpBox.hidden = true;
+    if (aiHelpBox) aiHelpBox.hidden = true;
     setHasPhoto(false);
   });
 
+  function roundRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
   function renderSuggestion() {
-    if (!sourceImage) return;
+    if (!sourceImage || !afterCanvas) return;
     const preset = STYLE_PRESETS[currentStyle] || STYLE_PRESETS.modern;
     const maxW = 1200;
     const scale = Math.min(1, maxW / sourceImage.naturalWidth);
@@ -210,6 +249,7 @@
     afterCanvas.width = w;
     afterCanvas.height = h;
     const ctx = afterCanvas.getContext("2d");
+    if (!ctx) return;
 
     ctx.save();
     ctx.filter = preset.filter;
@@ -256,7 +296,6 @@
       ctx.fillText(ic.emoji, w * ic.x, h * ic.y);
     });
 
-    // Subtle style caption bottom-left (badge is in HTML chrome)
     const cap = `${preset.name} · ${preset.floorHint}`;
     ctx.font = `600 ${Math.max(11, Math.round(w * 0.018))}px "PingFang HK", "Noto Sans TC", sans-serif`;
     const tw = ctx.measureText(cap).width;
@@ -271,29 +310,20 @@
     ctx.textBaseline = "middle";
     ctx.fillText(cap, bx + pad, by + 13);
 
-    placementLabels.innerHTML = "";
-    preset.placements.forEach((p) => {
-      const li = document.createElement("li");
-      li.textContent = p.label;
-      li.style.left = `${p.x}%`;
-      li.style.top = `${p.y}%`;
-      placementLabels.appendChild(li);
-    });
+    if (placementLabels) {
+      placementLabels.innerHTML = "";
+      preset.placements.forEach((p) => {
+        const li = document.createElement("li");
+        li.textContent = p.label;
+        li.style.left = `${p.x}%`;
+        li.style.top = `${p.y}%`;
+        placementLabels.appendChild(li);
+      });
+    }
 
-    beforeTag.textContent = "客廳";
-    afterTag.textContent = "客廳";
+    if (beforeTag) beforeTag.textContent = "客廳";
+    if (afterTag) afterTag.textContent = "客廳";
     if (beforeMeta) beforeMeta.textContent = "客廳 · 原相";
-  }
-
-  function roundRect(ctx, x, y, w, h, r) {
-    const rr = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + rr, y);
-    ctx.arcTo(x + w, y, x + w, y + h, rr);
-    ctx.arcTo(x + w, y + h, x, y + h, rr);
-    ctx.arcTo(x, y + h, x, y, rr);
-    ctx.arcTo(x, y, x + w, y, rr);
-    ctx.closePath();
   }
 
   // ——— Floor plan ———
@@ -321,6 +351,7 @@
   }
 
   function renderPalette() {
+    if (!palette) return;
     palette.innerHTML = "";
     FURNITURE.forEach((f) => {
       const btn = document.createElement("button");
@@ -329,7 +360,7 @@
       btn.dataset.id = f.id;
       btn.setAttribute("role", "listitem");
       btn.innerHTML = `<span class="ico" style="background:${f.color}33">${f.emoji}</span><span class="label">${f.name}</span>`;
-      btn.addEventListener("pointerdown", (e) => {
+      on(btn, "pointerdown", (e) => {
         e.preventDefault();
         startPaletteDrag(e, f);
       });
@@ -338,6 +369,7 @@
   }
 
   function renderFloorItems() {
+    if (!floorRoom) return;
     $$(".floor-item", floorRoom).forEach((el) => el.remove());
     floorItems.forEach((item) => {
       const el = document.createElement("div");
@@ -347,12 +379,12 @@
       el.style.top = `calc(${item.y}% - 28px)`;
       el.innerHTML = `<span class="emoji">${item.emoji}</span><span>${item.name}</span>`;
       el.title = "拖動搬位 · 雙撃刪除";
-      el.addEventListener("pointerdown", (e) => {
+      on(el, "pointerdown", (e) => {
         e.preventDefault();
         e.stopPropagation();
         startItemDrag(e, item.uid);
       });
-      el.addEventListener("dblclick", () => {
+      on(el, "dblclick", () => {
         floorItems = floorItems.filter((x) => x.uid !== item.uid);
         saveFloor();
         renderFloorItems();
@@ -372,6 +404,7 @@
   }
 
   function startPaletteDrag(e, furn) {
+    if (!floorRoom) return;
     const ghost = document.createElement("div");
     ghost.className = "floor-item dragging";
     ghost.style.position = "fixed";
@@ -410,14 +443,11 @@
     };
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
-    if (e.target.setPointerCapture) {
-      try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
-    }
   }
 
   function startItemDrag(e, itemUid) {
     const item = floorItems.find((x) => x.uid === itemUid);
-    if (!item) return;
+    if (!item || !floorRoom) return;
     const el = floorRoom.querySelector(`[data-uid="${itemUid}"]`);
     if (el) el.classList.add("dragging");
     const move = (ev) => {
@@ -439,7 +469,7 @@
     document.addEventListener("pointerup", up);
   }
 
-  $("#resetFloorBtn").addEventListener("click", () => {
+  on($("#resetFloorBtn"), "click", () => {
     floorItems = [
       { uid: uid(), id: "sofa", name: "沙發", emoji: "🛋️", x: 30, y: 65 },
       { uid: uid(), id: "table", name: "餐桌", emoji: "🍽️", x: 55, y: 45 },
@@ -448,12 +478,16 @@
     saveFloor();
     renderFloorItems();
   });
-
-  $("#clearFloorBtn").addEventListener("click", () => {
+  on($("#clearFloorBtn"), "click", () => {
     floorItems = [];
     saveFloor();
     renderFloorItems();
   });
+
+  // Ensure empty state on load
+  if (uploadHero) uploadHero.hidden = false;
+  if (immersiveCompare) immersiveCompare.hidden = true;
+  syncImmersiveChrome();
 
   renderPalette();
   loadFloor();

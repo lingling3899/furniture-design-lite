@@ -149,7 +149,13 @@ body.mode-immersive .wrap {
   padding-right: 0;
   padding-bottom: 24px;
 }
-.view[hidden] { display: none !important; }
+.view[hidden],
+.immersive[hidden],
+#uploadHero[hidden],
+#aiHelpBox[hidden],
+[hidden] {
+  display: none !important;
+}
 
 .panel {
   background: var(--bg-soft);
@@ -207,6 +213,12 @@ body.mode-immersive .wrap {
   gap: 8px;
   align-items: center;
   max-width: 340px;
+  position: relative;
+  z-index: 2;
+}
+.upload-inner .upload-cta,
+.upload-inner .upload-pick {
+  pointer-events: auto;
 }
 .upload-illus {
   position: relative;
@@ -239,12 +251,6 @@ body.mode-immersive .wrap {
   margin: 0;
   color: var(--muted);
   font-size: 0.95rem;
-}
-.upload-cta {
-  margin-top: 6px;
-  pointer-events: none;
-  padding: 12px 28px !important;
-  font-size: 1rem !important;
 }
 
 .btn {
@@ -696,4 +702,82 @@ body.mode-immersive .style-card-desc { color: #a89888; }
   .shot-frame canvas {
     height: min(56vh, 520px);
   }
+}
+
+
+.upload-cta {
+  margin-top: 6px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+  padding: 12px 28px !important;
+  font-size: 1rem !important;
+  cursor: pointer;
+}
+.upload-pick {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  margin-top: 2px;
+}
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+  font-size: 0;
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 3D room */
+.room3d-panel { padding-bottom: 12px; }
+.room3d-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.room3d-stage {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #1a222c;
+  aspect-ratio: 4 / 3;
+  min-height: 280px;
+  touch-action: none;
+}
+.room3d-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  touch-action: none;
+}
+.room3d-hud {
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(12,10,8,0.55);
+  color: #f3ece3;
+  font-size: 0.78rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+.room3d-hud.ok { background: rgba(12,10,8,0.4); }
+.room3d-hud.err { background: rgba(120,40,30,0.85); }
+.btn.dangerish { color: var(--danger); border-color: #e2c2bb; }
+.room3d-palette .palette-item.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(139,107,74,0.25);
 }

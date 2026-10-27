@@ -3,10 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="家俬設計 Lite：上載房間相睇裝修建議示意，或喺平面圖拖放擺位。示意非實景、非報價。" />
+  <meta name="description" content="家俬設計 Lite：上載房間相睇裝修建議示意，2D／3D 擺位。示意非實景、非報價。" />
   <meta name="theme-color" content="#1a1612" />
-  <title>家俬設計 Lite · 裝修建議／平面擺位</title>
-  <link rel="stylesheet" href="assets/css/app.css?v=20261027b" />
+  <title>家俬設計 Lite · 裝修建議／2D／3D 擺位</title>
+  <link rel="stylesheet" href="assets/css/app.css?v=20261027c" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -15,12 +23,13 @@
         <div class="brand-mark" aria-hidden="true">🏠</div>
         <div class="brand-text">
           <h1>家俬設計 Lite</h1>
-          <p>相片建議　｜　平面擺位　｜　說明</p>
+          <p>相片建議　｜　平面　｜　3D　｜　說明</p>
         </div>
       </div>
       <nav class="nav-tabs" aria-label="主要分頁">
         <button type="button" class="active" data-view="photo">相片建議</button>
         <button type="button" data-view="floor">平面擺位</button>
+        <button type="button" data-view="room3d">3D 擺位</button>
         <button type="button" data-view="about">說明</button>
       </nav>
     </div>
@@ -29,10 +38,9 @@
   <main class="wrap">
     <!-- 相片建議 -->
     <section id="view-photo" class="view active" aria-labelledby="photo-title">
-      <!-- Empty-state hero upload -->
       <div class="upload-hero" id="uploadHero">
         <div class="upload-zone" id="uploadZone">
-          <input type="file" id="photoInput" accept="image/*" capture="environment" aria-label="上載房間相" />
+          <input type="file" id="photoInput" accept="image/*" aria-label="上載房間相" />
           <div class="upload-inner" id="uploadPrompt">
             <div class="upload-illus" aria-hidden="true">
               <span class="upload-illus-room">🛋️</span>
@@ -40,7 +48,8 @@
             </div>
             <h2 id="photo-title">上載你嘅空間相片</h2>
             <p class="upload-sub">影／揀一張房相，即睇<strong>原相</strong>同<strong>裝修建議示意</strong></p>
-            <span class="btn primary upload-cta" aria-hidden="true">上載／影相</span>
+            <label class="btn primary upload-cta" for="photoInput">上載／影相</label>
+            <button type="button" class="btn ghost upload-pick" id="photoPickBtn">揀相檔案</button>
             <span class="muted tiny">JPG、PNG · 建議橫向房間相 · 本版係本地示意</span>
           </div>
         </div>
@@ -68,7 +77,6 @@
         <p class="disclaimer soft">⚠️ 示意非實景／非報價；AI／風格建議僅供參考。</p>
       </div>
 
-      <!-- Immersive compare (after upload) -->
       <div class="immersive" id="immersiveCompare" hidden>
         <div class="style-dock" id="styleRow">
           <div class="style-cards" role="group" aria-label="裝修風格">
@@ -120,10 +128,8 @@
           <button type="button" class="ibar-btn primary" id="regenBtn">重新產生示意</button>
           <button type="button" class="ibar-btn" id="aiHelpBtn">請網頁工房用 AI 出圖</button>
           <button type="button" class="ibar-btn danger" id="clearPhotoBtn">清除</button>
-          <label class="ibar-btn reupload">
-            換相
-            <input type="file" id="photoInputReplace" accept="image/*" capture="environment" aria-label="換另一張相" />
-          </label>
+          <label class="ibar-btn reupload" for="photoInputReplace">換相</label>
+          <input type="file" id="photoInputReplace" class="visually-hidden" accept="image/*" aria-label="換另一張相" />
         </div>
 
         <div class="callout dark" id="aiHelpBox" hidden role="status">
@@ -162,17 +168,44 @@
       </div>
     </section>
 
+    <!-- 3D 擺位 -->
+    <section id="view-room3d" class="view" aria-labelledby="room3d-title" hidden>
+      <div class="panel room3d-panel">
+        <h2 id="room3d-title">3D 立體擺位</h2>
+        <p class="hint">喺立體客廳入面擺傢俬。單撃下方圖示加入；拖地板上嘅傢俬搬位；可旋轉／刪除。雙指或滑鼠拖動轉角、滾輪縮放。</p>
+
+        <div class="room3d-toolbar">
+          <div class="furniture-palette room3d-palette" id="room3dPalette" role="list" aria-label="3D 傢俬"></div>
+          <div class="floor-btns room3d-btns">
+            <button type="button" class="btn ghost" id="room3dRotateBtn">旋轉選中</button>
+            <button type="button" class="btn ghost dangerish" id="room3dDeleteBtn">刪除選中</button>
+            <button type="button" class="btn ghost" id="room3dResetBtn">重置</button>
+            <button type="button" class="btn ghost" id="room3dClearBtn">清空</button>
+          </div>
+        </div>
+
+        <div class="room3d-stage" id="room3dStage">
+          <canvas id="room3dCanvas" aria-label="3D 客廳示意"></canvas>
+          <div class="room3d-hud" id="room3dHud">載入 3D 引擎中…</div>
+        </div>
+
+        <p class="muted tiny">提示：單指轉視角 · 雙指縮放／平移 · 點地板上傢俬再拖。資料存本機，唔會上傳。需連線載入 Three.js CDN。</p>
+        <p class="disclaimer">⚠️ 示意非實景／非報價／非施工圖；3D 僅供構思參考。</p>
+      </div>
+    </section>
+
     <!-- 說明 -->
     <section id="view-about" class="view" aria-labelledby="about-title" hidden>
       <div class="panel">
         <h2 id="about-title">說明</h2>
         <ul class="about-list">
-          <li><strong>相片建議</strong>：上載房間相 → 揀風格（現代簡約／北歐／日式）→ 上下對比睇原相同裝修示意（本地濾鏡＋傢俬標籤）。</li>
-          <li><strong>平面擺位</strong>：拖沙發、餐桌、床、櫃、電視櫃到平面圖，位置自動儲存。</li>
-          <li><strong>唔使登入</strong>：MVP 全離線可用（載入頁面後）。</li>
-          <li><strong>免責</strong>：示意非實景、非報價、非專業設計圖；僅供構思參考。</li>
+          <li><strong>相片建議</strong>：上載房間相 → 揀風格 → 上下對比睇原相同裝修示意（本地濾鏡＋標籤）。</li>
+          <li><strong>平面擺位</strong>：2D 頂視圖拖沙發、餐桌、床、櫃、電視櫃。</li>
+          <li><strong>3D 擺位</strong>：立體客廳＋傢俬，Orbit 轉角，raycast 搬位（Three.js CDN）。</li>
+          <li><strong>唔使登入</strong>：MVP 載入後可用（3D 首次需連線攞 CDN）。</li>
+          <li><strong>免責</strong>：示意非實景、非報價、非專業設計／施工圖。</li>
         </ul>
-        <p class="muted">版本 <code>?v=20261027b</code> · 靜態站 · lingling3899/furniture-design-lite</p>
+        <p class="muted">版本 <code>?v=20261027c</code> · 靜態站 · lingling3899/furniture-design-lite</p>
       </div>
     </section>
   </main>
@@ -181,6 +214,7 @@
     <p>家俬設計 Lite · 示意原型 · 粵語繁體</p>
   </footer>
 
-  <script src="assets/js/app.js?v=20261027b" defer></script>
+  <script src="assets/js/app.js?v=20261027c" defer></script>
+  <script type="module" src="assets/js/room3d.js?v=20261027c"></script>
 </body>
 </html>

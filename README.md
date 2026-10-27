@@ -2,7 +2,7 @@
 
 靜態原型：上載房間相睇「原相 → 裝修建議示意」，或喺平面圖拖放傢俬擺位。
 
-**預覽：** https://lingling3899.github.io/furniture-design-lite/?v=20261027b
+**預覽：** https://lingling3899.github.io/furniture-design-lite/?v=20261027c
 
 ## 功能
 
@@ -13,7 +13,10 @@
 2. **平面擺位**  
    拖沙發、餐桌、床、櫃、電視櫃到 2D 平面；位置存 `localStorage`；可重置／清空。雙撃圖示刪除。
 
-3. **說明**  
+3. **3D 擺位**  
+   Three.js 立體客廳；點選傢俬加入，地板 raycast 搬位，OrbitControls 轉角；另存 `localStorage`（需 CDN）。
+
+4. **說明**  
    用法同免責。
 
 ## 免責
@@ -24,7 +27,7 @@
 
 - 純 HTML／CSS／JS（無框架）
 - GitHub Pages 部署
-- Cache-bust：`?v=20261027b`
+- Cache-bust：`?v=20261027c`
 
 ## 本地預覽
 
@@ -33,7 +36,7 @@
 ```bash
 cd furniture-design-lite
 python3 -m http.server 8765
-# 瀏覽器開 http://127.0.0.1:8765/?v=20261027b
+# 瀏覽器開 http://127.0.0.1:8765/?v=20261027c
 ```
 
 ## 授權／用途
