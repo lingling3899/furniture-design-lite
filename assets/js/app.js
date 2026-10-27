@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CACHE = "20261027a";
+  const CACHE = "20261027b";
   const STORAGE_KEY = "furniture-design-lite-floor-v1";
 
   const FURNITURE = [
@@ -51,7 +51,6 @@
     },
   };
 
-  // ——— DOM ———
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -61,46 +60,63 @@
     about: $("#view-about"),
   };
 
-  // Photo
   const photoInput = $("#photoInput");
+  const photoInputReplace = $("#photoInputReplace");
   const uploadZone = $("#uploadZone");
-  const styleRow = $("#styleRow");
-  const comparePanel = $("#comparePanel");
+  const uploadHero = $("#uploadHero");
+  const immersiveCompare = $("#immersiveCompare");
   const beforeImg = $("#beforeImg");
   const afterCanvas = $("#afterCanvas");
   const placementLabels = $("#placementLabels");
-  const photoActions = $("#photoActions");
   const aiHelpBox = $("#aiHelpBox");
   const beforeTag = $("#beforeTag");
   const afterTag = $("#afterTag");
-
-  // Floor
+  const beforeMeta = $("#beforeMeta");
   const palette = $("#furniturePalette");
   const floorRoom = $("#floorRoom");
 
   let currentStyle = "modern";
-  let sourceImage = null; // HTMLImageElement
+  let sourceImage = null;
   let sourceObjectUrl = null;
+  let activeView = "photo";
 
-  // ——— Tabs ———
+  function syncImmersiveChrome() {
+    const on =
+      activeView === "photo" &&
+      immersiveCompare &&
+      !immersiveCompare.hidden;
+    document.body.classList.toggle("mode-immersive", on);
+  }
+
   $$(".nav-tabs button").forEach((btn) => {
     btn.addEventListener("click", () => {
       const view = btn.dataset.view;
+      activeView = view;
       $$(".nav-tabs button").forEach((b) => b.classList.toggle("active", b === btn));
       Object.entries(views).forEach(([key, el]) => {
         const on = key === view;
         el.hidden = !on;
         el.classList.toggle("active", on);
       });
+      syncImmersiveChrome();
     });
   });
 
-  // ——— Photo upload ———
   function setHasPhoto(has) {
-    styleRow.hidden = !has;
-    comparePanel.hidden = !has;
-    photoActions.hidden = !has;
-    $("#uploadPrompt").hidden = has;
+    if (uploadHero) uploadHero.hidden = has;
+    if (immersiveCompare) immersiveCompare.hidden = !has;
+    syncImmersiveChrome();
+    // Enable dock style cards; tease stays disabled
+    $$("#styleRow .style-card").forEach((c) => {
+      c.disabled = false;
+    });
+  }
+
+  function setStyleActive(style) {
+    currentStyle = style;
+    $$(".style-card").forEach((c) => {
+      c.classList.toggle("active", c.dataset.style === style);
+    });
   }
 
   function revokeUrl() {
@@ -131,6 +147,12 @@
     const file = e.target.files && e.target.files[0];
     loadFile(file);
   });
+  if (photoInputReplace) {
+    photoInputReplace.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      loadFile(file);
+    });
+  }
 
   ["dragenter", "dragover"].forEach((ev) => {
     uploadZone.addEventListener(ev, (e) => {
@@ -149,10 +171,10 @@
     loadFile(file);
   });
 
-  $$(".chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      currentStyle = chip.dataset.style;
-      $$(".chip").forEach((c) => c.classList.toggle("active", c === chip));
+  $$(".style-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      if (card.disabled) return;
+      setStyleActive(card.dataset.style);
       if (sourceImage) renderSuggestion();
     });
   });
@@ -170,9 +192,10 @@
     sourceImage = null;
     beforeImg.removeAttribute("src");
     const ctx = afterCanvas.getContext("2d");
-    ctx && ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
+    if (ctx) ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
     placementLabels.innerHTML = "";
     photoInput.value = "";
+    if (photoInputReplace) photoInputReplace.value = "";
     aiHelpBox.hidden = true;
     setHasPhoto(false);
   });
@@ -180,36 +203,34 @@
   function renderSuggestion() {
     if (!sourceImage) return;
     const preset = STYLE_PRESETS[currentStyle] || STYLE_PRESETS.modern;
-    const maxW = 900;
+    const maxW = 1200;
     const scale = Math.min(1, maxW / sourceImage.naturalWidth);
-    const w = Math.round(sourceImage.naturalWidth * scale);
-    const h = Math.round(sourceImage.naturalHeight * scale);
+    const w = Math.round(sourceImage.naturalWidth * scale) || 800;
+    const h = Math.round(sourceImage.naturalHeight * scale) || 600;
     afterCanvas.width = w;
     afterCanvas.height = h;
     const ctx = afterCanvas.getContext("2d");
 
-    // Base photo with style filter
     ctx.save();
     ctx.filter = preset.filter;
     ctx.drawImage(sourceImage, 0, 0, w, h);
     ctx.restore();
 
-    // Warm/cool tint overlay
     ctx.fillStyle = preset.tint;
     ctx.fillRect(0, 0, w, h);
 
-    // Soft vignette for "polished render" feel
-    const grad = ctx.createRadialGradient(w * 0.5, h * 0.45, h * 0.2, w * 0.5, h * 0.5, h * 0.85);
+    const grad = ctx.createRadialGradient(
+      w * 0.5, h * 0.45, h * 0.2,
+      w * 0.5, h * 0.5, h * 0.85
+    );
     grad.addColorStop(0, "rgba(255,255,255,0)");
     grad.addColorStop(1, "rgba(30,24,18,0.22)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Floor strip suggestion (bottom third light wash)
     ctx.fillStyle = "rgba(232, 214, 180, 0.18)";
     ctx.fillRect(0, h * 0.62, w, h * 0.38);
 
-    // Furniture icon overlays (simple geometric + emoji)
     const icons = [
       { emoji: "🛋️", x: 0.2, y: 0.62, s: 0.09 },
       { emoji: "🪴", x: 0.12, y: 0.38, s: 0.06 },
@@ -227,7 +248,6 @@
     ctx.textBaseline = "middle";
     icons.forEach((ic) => {
       const size = Math.max(22, w * ic.s);
-      // soft plate behind emoji
       ctx.beginPath();
       ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.ellipse(w * ic.x, h * ic.y, size * 0.7, size * 0.55, 0, 0, Math.PI * 2);
@@ -236,17 +256,21 @@
       ctx.fillText(ic.emoji, w * ic.x, h * ic.y);
     });
 
-    // Style caption bar
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    roundRect(ctx, 12, 12, Math.min(w - 24, 280), 36, 18);
+    // Subtle style caption bottom-left (badge is in HTML chrome)
+    const cap = `${preset.name} · ${preset.floorHint}`;
+    ctx.font = `600 ${Math.max(11, Math.round(w * 0.018))}px "PingFang HK", "Noto Sans TC", sans-serif`;
+    const tw = ctx.measureText(cap).width;
+    const pad = 10;
+    const bx = 14;
+    const by = h - 36;
+    ctx.fillStyle = "rgba(12,10,8,0.55)";
+    roundRect(ctx, bx, by, tw + pad * 2, 26, 8);
     ctx.fill();
-    ctx.fillStyle = "#6e5238";
-    ctx.font = `600 ${Math.max(12, Math.round(w * 0.022))}px "PingFang HK", "Noto Sans TC", sans-serif`;
+    ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`🎨 ${preset.name} · ${preset.floorHint}`, 24, 30);
+    ctx.fillText(cap, bx + pad, by + 13);
 
-    // Floating placement labels (DOM, responsive %)
     placementLabels.innerHTML = "";
     preset.placements.forEach((p) => {
       const li = document.createElement("li");
@@ -257,7 +281,8 @@
     });
 
     beforeTag.textContent = "客廳";
-    afterTag.textContent = "客廳 · " + preset.name;
+    afterTag.textContent = "客廳";
+    if (beforeMeta) beforeMeta.textContent = "客廳 · 原相";
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -272,8 +297,7 @@
   }
 
   // ——— Floor plan ———
-  let floorItems = []; // { uid, id, name, emoji, x, y }  x/y percent 0-100
-  let dragState = null;
+  let floorItems = [];
 
   function uid() {
     return "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -282,7 +306,7 @@
   function saveFloor() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(floorItems));
-    } catch (_) { /* ignore quota */ }
+    } catch (_) { /* ignore */ }
   }
 
   function loadFloor() {
@@ -305,7 +329,6 @@
       btn.dataset.id = f.id;
       btn.setAttribute("role", "listitem");
       btn.innerHTML = `<span class="ico" style="background:${f.color}33">${f.emoji}</span><span class="label">${f.name}</span>`;
-      // Pointer-based drag from palette → room
       btn.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         startPaletteDrag(e, f);
@@ -397,7 +420,6 @@
     if (!item) return;
     const el = floorRoom.querySelector(`[data-uid="${itemUid}"]`);
     if (el) el.classList.add("dragging");
-    dragState = { uid: itemUid };
     const move = (ev) => {
       const pt = roomPointFromEvent(ev);
       item.x = pt.x;
@@ -411,7 +433,6 @@
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", up);
       if (el) el.classList.remove("dragging");
-      dragState = null;
       saveFloor();
     };
     document.addEventListener("pointermove", move);
@@ -419,7 +440,6 @@
   }
 
   $("#resetFloorBtn").addEventListener("click", () => {
-    // Default demo layout
     floorItems = [
       { uid: uid(), id: "sofa", name: "沙發", emoji: "🛋️", x: 30, y: 65 },
       { uid: uid(), id: "table", name: "餐桌", emoji: "🍽️", x: 55, y: 45 },
@@ -435,7 +455,6 @@
     renderFloorItems();
   });
 
-  // Init
   renderPalette();
   loadFloor();
   if (!floorItems.length) {
@@ -445,6 +464,7 @@
     ];
   }
   renderFloorItems();
+  setStyleActive("modern");
 
   console.info(`[furniture-design-lite] ready v=${CACHE}`);
 })();

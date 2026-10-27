@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="家俬設計 Lite：上載房間相睇裝修建議示意，或喺平面圖拖放擺位。示意非實景、非報價。" />
-  <meta name="theme-color" content="#8b6b4a" />
+  <meta name="theme-color" content="#1a1612" />
   <title>家俬設計 Lite · 裝修建議／平面擺位</title>
-  <link rel="stylesheet" href="assets/css/app.css?v=20261027a" />
+  <link rel="stylesheet" href="assets/css/app.css?v=20261027b" />
 </head>
 <body>
   <header class="topbar">
@@ -29,67 +29,120 @@
   <main class="wrap">
     <!-- 相片建議 -->
     <section id="view-photo" class="view active" aria-labelledby="photo-title">
-      <div class="panel">
-        <h2 id="photo-title">① 上載房間相</h2>
-        <p class="hint">影／揀一張客廳、睡房或廚房相，即睇「原相 → 裝修建議示意」。本版係本地示意（濾鏡＋傢俬標籤），真正 AI 實景圖稍後可接。</p>
-
+      <!-- Empty-state hero upload -->
+      <div class="upload-hero" id="uploadHero">
         <div class="upload-zone" id="uploadZone">
           <input type="file" id="photoInput" accept="image/*" capture="environment" aria-label="上載房間相" />
           <div class="upload-inner" id="uploadPrompt">
-            <span class="upload-icon" aria-hidden="true">📷</span>
-            <strong>撳呢度上載／影相</strong>
-            <span class="muted">支援 JPG、PNG · 建議橫向房間相</span>
+            <div class="upload-illus" aria-hidden="true">
+              <span class="upload-illus-room">🛋️</span>
+              <span class="upload-illus-cam">📷</span>
+            </div>
+            <h2 id="photo-title">上載你嘅空間相片</h2>
+            <p class="upload-sub">影／揀一張房相，即睇<strong>原相</strong>同<strong>裝修建議示意</strong></p>
+            <span class="btn primary upload-cta" aria-hidden="true">上載／影相</span>
+            <span class="muted tiny">JPG、PNG · 建議橫向房間相 · 本版係本地示意</span>
           </div>
         </div>
 
-        <div class="style-row" id="styleRow" hidden>
-          <label class="field">風格預設</label>
-          <div class="chips" role="group" aria-label="裝修風格">
-            <button type="button" class="chip active" data-style="modern">現代簡約</button>
-            <button type="button" class="chip" data-style="nordic">北歐</button>
-            <button type="button" class="chip" data-style="japanese">日式</button>
+        <div class="style-tease" id="styleTease">
+          <p class="field">風格預覽（上載後可用）</p>
+          <div class="style-cards" role="group" aria-label="裝修風格預覽">
+            <button type="button" class="style-card active" data-style="modern" disabled>
+              <span class="swatch swatch-modern" aria-hidden="true"></span>
+              <span class="style-card-label">現代簡約</span>
+              <span class="style-card-desc">淺灰木 · 簡潔</span>
+            </button>
+            <button type="button" class="style-card" data-style="nordic" disabled>
+              <span class="swatch swatch-nordic" aria-hidden="true"></span>
+              <span class="style-card-label">北歐</span>
+              <span class="style-card-desc">淺木 · 布藝</span>
+            </button>
+            <button type="button" class="style-card" data-style="japanese" disabled>
+              <span class="swatch swatch-japanese" aria-hidden="true"></span>
+              <span class="style-card-label">日式</span>
+              <span class="style-card-desc">低矮 · 和風</span>
+            </button>
+          </div>
+        </div>
+        <p class="disclaimer soft">⚠️ 示意非實景／非報價；AI／風格建議僅供參考。</p>
+      </div>
+
+      <!-- Immersive compare (after upload) -->
+      <div class="immersive" id="immersiveCompare" hidden>
+        <div class="style-dock" id="styleRow">
+          <div class="style-cards" role="group" aria-label="裝修風格">
+            <button type="button" class="style-card active" data-style="modern">
+              <span class="swatch swatch-modern" aria-hidden="true"></span>
+              <span class="style-card-label">現代簡約</span>
+            </button>
+            <button type="button" class="style-card" data-style="nordic">
+              <span class="swatch swatch-nordic" aria-hidden="true"></span>
+              <span class="style-card-label">北歐</span>
+            </button>
+            <button type="button" class="style-card" data-style="japanese">
+              <span class="swatch swatch-japanese" aria-hidden="true"></span>
+              <span class="style-card-label">日式</span>
+            </button>
           </div>
         </div>
 
-        <div class="compare" id="comparePanel" hidden>
+        <div class="compare-stack" id="comparePanel">
           <article class="shot before">
-            <div class="shot-badge">原相</div>
-            <img id="beforeImg" alt="房間原相" />
-            <span class="room-tag" id="beforeTag">客廳</span>
+            <div class="shot-chrome">
+              <span class="shot-badge dark">原相</span>
+              <span class="shot-meta" id="beforeMeta">客廳</span>
+            </div>
+            <div class="shot-frame">
+              <img id="beforeImg" alt="房間原相" />
+              <span class="room-pill" id="beforeTag">客廳</span>
+              <span class="room-pill kitchen" id="beforeKitchen">廚房</span>
+            </div>
           </article>
+
           <article class="shot after">
-            <div class="shot-badge after-badge">🎨 裝修後（示意）</div>
-            <canvas id="afterCanvas" aria-label="裝修建議示意"></canvas>
-            <span class="room-tag" id="afterTag">客廳</span>
-            <ul class="placement-labels" id="placementLabels" aria-label="傢俬擺位建議"></ul>
+            <div class="shot-chrome">
+              <span class="shot-badge renovate">
+                <svg class="roller" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M19 4h-8a2 2 0 0 0-2 2v1H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v7a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-7h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 6H9V6h10z"/></svg>
+                裝修後（示意）
+              </span>
+            </div>
+            <div class="shot-frame">
+              <canvas id="afterCanvas" aria-label="裝修建議示意"></canvas>
+              <span class="room-pill" id="afterTag">客廳</span>
+              <span class="room-pill kitchen" id="afterKitchen">廚房</span>
+              <ul class="placement-labels" id="placementLabels" aria-label="傢俬擺位建議"></ul>
+            </div>
           </article>
         </div>
 
-        <div class="actions" id="photoActions" hidden>
-          <button type="button" class="btn primary" id="regenBtn">重新產生示意</button>
-          <button type="button" class="btn ghost" id="aiHelpBtn">請網頁工房／助手用 AI 出圖</button>
-          <button type="button" class="btn ghost dangerish" id="clearPhotoBtn">清除相片</button>
+        <div class="immersive-bar" id="photoActions">
+          <button type="button" class="ibar-btn primary" id="regenBtn">重新產生示意</button>
+          <button type="button" class="ibar-btn" id="aiHelpBtn">請網頁工房用 AI 出圖</button>
+          <button type="button" class="ibar-btn danger" id="clearPhotoBtn">清除</button>
+          <label class="ibar-btn reupload">
+            換相
+            <input type="file" id="photoInputReplace" accept="image/*" capture="environment" aria-label="換另一張相" />
+          </label>
         </div>
 
-        <div class="callout" id="aiHelpBox" hidden role="status">
+        <div class="callout dark" id="aiHelpBox" hidden role="status">
           <strong>真正 AI 裝修圖</strong>
-          <p>靜態 Pages 版而家用本地濾鏡＋傢俬標籤做示意。若要像參考圖咁「實景級 AI 出圖」，需要後端／付費圖像 API，或交畀網頁工房／助手用 GenerateImage 類工具根據你嘅原相出建議圖。之後可再接上。</p>
+          <p>靜態 Pages 版而家用本地濾鏡＋傢俬標籤做<strong>示意</strong>，唔係實景級 AI 出圖。若要像參考圖咁，需要後端／圖像 API，或交畀網頁工房／助手根據你嘅原相出建議圖。之後可再接上。</p>
         </div>
 
-        <p class="disclaimer">⚠️ 示意非實景／非報價；AI／風格建議僅供參考，實際裝修請咨詢專業人士。</p>
+        <p class="disclaimer on-dark">⚠️ 示意非實景／非報價；風格建議僅供參考，實際裝修請咨詢專業人士。</p>
       </div>
     </section>
 
     <!-- 平面擺位 -->
     <section id="view-floor" class="view" aria-labelledby="floor-title" hidden>
       <div class="panel">
-        <h2 id="floor-title">② 平面擺位</h2>
+        <h2 id="floor-title">平面擺位</h2>
         <p class="hint">拖傢俬圖示落房間平面；位置會自動存到本機（localStorage）。雙撃圖示可刪除。</p>
 
         <div class="floor-toolbar">
-          <div class="furniture-palette" id="furniturePalette" role="list" aria-label="傢俬清單">
-            <!-- filled by JS -->
-          </div>
+          <div class="furniture-palette" id="furniturePalette" role="list" aria-label="傢俬清單"></div>
           <div class="floor-btns">
             <button type="button" class="btn ghost" id="resetFloorBtn">重置擺位</button>
             <button type="button" class="btn ghost" id="clearFloorBtn">清空全部</button>
@@ -104,7 +157,7 @@
           </div>
         </div>
 
-        <p class="muted tiny">提示：由下方／上方色塊拖入房間；放開即擺放。資料只存你部裝置，唔會上傳。</p>
+        <p class="muted tiny">提示：由上方色塊拖入房間；放開即擺放。資料只存你部裝置，唔會上傳。</p>
         <p class="disclaimer">⚠️ 示意非實景／非報價；擺位僅供構思，唔作施工圖。</p>
       </div>
     </section>
@@ -114,12 +167,12 @@
       <div class="panel">
         <h2 id="about-title">說明</h2>
         <ul class="about-list">
-          <li><strong>相片建議</strong>：上載房間相 → 揀風格（現代簡約／北歐／日式）→ 睇原相同裝修示意（本地濾鏡＋傢俬標籤）。</li>
+          <li><strong>相片建議</strong>：上載房間相 → 揀風格（現代簡約／北歐／日式）→ 上下對比睇原相同裝修示意（本地濾鏡＋傢俬標籤）。</li>
           <li><strong>平面擺位</strong>：拖沙發、餐桌、床、櫃、電視櫃到平面圖，位置自動儲存。</li>
           <li><strong>唔使登入</strong>：MVP 全離線可用（載入頁面後）。</li>
           <li><strong>免責</strong>：示意非實景、非報價、非專業設計圖；僅供構思參考。</li>
         </ul>
-        <p class="muted">版本 <code>?v=20261027a</code> · 靜態站 · lingling3899/furniture-design-lite</p>
+        <p class="muted">版本 <code>?v=20261027b</code> · 靜態站 · lingling3899/furniture-design-lite</p>
       </div>
     </section>
   </main>
@@ -128,6 +181,6 @@
     <p>家俬設計 Lite · 示意原型 · 粵語繁體</p>
   </footer>
 
-  <script src="assets/js/app.js?v=20261027a" defer></script>
+  <script src="assets/js/app.js?v=20261027b" defer></script>
 </body>
 </html>

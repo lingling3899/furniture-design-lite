@@ -2,7 +2,7 @@
 
 靜態原型：上載房間相睇「原相 → 裝修建議示意」，或喺平面圖拖放傢俬擺位。
 
-**預覽：** https://lingling3899.github.io/furniture-design-lite/?v=20261027a
+**預覽：** https://lingling3899.github.io/furniture-design-lite/?v=20261027b
 
 ## 功能
 
@@ -24,7 +24,7 @@
 
 - 純 HTML／CSS／JS（無框架）
 - GitHub Pages 部署
-- Cache-bust：`?v=20261027a`
+- Cache-bust：`?v=20261027b`
 
 ## 本地預覽
 
@@ -33,7 +33,7 @@
 ```bash
 cd furniture-design-lite
 python3 -m http.server 8765
-# 瀏覽器開 http://127.0.0.1:8765/?v=20261027a
+# 瀏覽器開 http://127.0.0.1:8765/?v=20261027b
 ```
 
 ## 授權／用途
