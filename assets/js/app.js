@@ -1,15 +1,21 @@
 (() => {
   "use strict";
 
-  const CACHE = "20261027c";
+  const CACHE = "20261028a";
   const STORAGE_KEY = "furniture-design-lite-floor-v1";
 
   const FURNITURE = [
-    { id: "sofa", name: "沙發", emoji: "🛋️", color: "#c4a484" },
-    { id: "table", name: "餐桌", emoji: "🍽️", color: "#a88b6a" },
-    { id: "bed", name: "床", emoji: "🛏️", color: "#8fa3b8" },
-    { id: "cabinet", name: "櫃", emoji: "🗄️", color: "#9a8b7a" },
-    { id: "tv", name: "電視櫃", emoji: "📺", color: "#6e7f8d" },
+    { id: "sofa", name: "沙發", emoji: "🛋️", color: "#d4b896", group: "wood" },
+    { id: "table", name: "餐桌", emoji: "🍽️", color: "#c9a87c", group: "wood" },
+    { id: "coffee", name: "茶几", emoji: "🪵", color: "#d4b896", group: "wood" },
+    { id: "bed", name: "床", emoji: "🛏️", color: "#e2d0b0", group: "wood" },
+    { id: "cabinet", name: "櫃", emoji: "🗄️", color: "#d4b896", group: "wood" },
+    { id: "tv", name: "電視櫃", emoji: "📺", color: "#c9a87c", group: "wood" },
+    { id: "shelf", name: "層架", emoji: "📚", color: "#d4b896", group: "wood" },
+    { id: "cattree", name: "貓爬架", emoji: "🐱", color: "#c9a87c", group: "cat" },
+    { id: "catshelf", name: "牆上層架", emoji: "🪜", color: "#e2d0b0", group: "cat" },
+    { id: "catcave", name: "貓洞櫃", emoji: "🏠", color: "#d4b896", group: "cat" },
+    { id: "feed", name: "餵食站", emoji: "🥣", color: "#c9a87c", group: "cat" },
   ];
 
   const STYLE_PRESETS = {
@@ -47,6 +53,30 @@
         { label: "坐墊區", x: 25, y: 65 },
         { label: "和風櫃", x: 72, y: 50 },
         { label: "紙燈角", x: 15, y: 30 },
+      ],
+    },
+    muji: {
+      name: "無印淺木",
+      filter: "contrast(1.04) saturate(0.82) brightness(1.14) sepia(0.14)",
+      tint: "rgba(220,195,155,0.24)",
+      floorHint: "淺橡木 · 暖白牆 · 明亮通透",
+      placements: [
+        { label: "淺木電視櫃", x: 70, y: 38 },
+        { label: "開放層架", x: 18, y: 42 },
+        { label: "布藝沙發", x: 28, y: 62 },
+        { label: "茶几", x: 48, y: 58 },
+      ],
+    },
+    cat: {
+      name: "貓友善",
+      filter: "contrast(1.03) saturate(0.88) brightness(1.1) sepia(0.1)",
+      tint: "rgba(200,210,185,0.2)",
+      floorHint: "淺木＋寵物友善整合",
+      placements: [
+        { label: "牆上層架", x: 78, y: 28 },
+        { label: "貓爬架", x: 82, y: 58 },
+        { label: "貓洞櫃", x: 16, y: 55 },
+        { label: "餵食角", x: 22, y: 78 },
       ],
     },
   };
@@ -264,11 +294,11 @@
       w * 0.5, h * 0.5, h * 0.85
     );
     grad.addColorStop(0, "rgba(255,255,255,0)");
-    grad.addColorStop(1, "rgba(30,24,18,0.22)");
+    grad.addColorStop(1, "rgba(30,24,18,0.18)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.fillStyle = "rgba(232, 214, 180, 0.18)";
+    ctx.fillStyle = "rgba(232, 214, 180, 0.2)";
     ctx.fillRect(0, h * 0.62, w, h * 0.38);
 
     const icons = [
@@ -283,6 +313,16 @@
     } else if (currentStyle === "nordic") {
       icons[0] = { emoji: "🛋️", x: 0.25, y: 0.58, s: 0.09 };
       icons[1] = { emoji: "🌿", x: 0.1, y: 0.42, s: 0.07 };
+    } else if (currentStyle === "muji") {
+      icons[0] = { emoji: "🛋️", x: 0.26, y: 0.6, s: 0.09 };
+      icons[1] = { emoji: "📚", x: 0.14, y: 0.4, s: 0.06 };
+      icons[2] = { emoji: "📺", x: 0.74, y: 0.36, s: 0.07 };
+      icons[3] = { emoji: "🪵", x: 0.48, y: 0.55, s: 0.055 };
+    } else if (currentStyle === "cat") {
+      icons[0] = { emoji: "🐱", x: 0.78, y: 0.52, s: 0.08 };
+      icons[1] = { emoji: "🪜", x: 0.82, y: 0.28, s: 0.06 };
+      icons[2] = { emoji: "🏠", x: 0.16, y: 0.55, s: 0.07 };
+      icons[3] = { emoji: "🥣", x: 0.22, y: 0.78, s: 0.055 };
     }
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -350,22 +390,42 @@
     }
   }
 
+  function appendPaletteItem(parent, f) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "palette-item";
+    btn.dataset.id = f.id;
+    btn.setAttribute("role", "listitem");
+    btn.innerHTML = `<span class="ico" style="background:${f.color}33">${f.emoji}</span><span class="label">${f.name}</span>`;
+    on(btn, "pointerdown", (e) => {
+      e.preventDefault();
+      startPaletteDrag(e, f);
+    });
+    parent.appendChild(btn);
+  }
+
   function renderPalette() {
     if (!palette) return;
     palette.innerHTML = "";
-    FURNITURE.forEach((f) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "palette-item";
-      btn.dataset.id = f.id;
-      btn.setAttribute("role", "listitem");
-      btn.innerHTML = `<span class="ico" style="background:${f.color}33">${f.emoji}</span><span class="label">${f.name}</span>`;
-      on(btn, "pointerdown", (e) => {
-        e.preventDefault();
-        startPaletteDrag(e, f);
-      });
-      palette.appendChild(btn);
-    });
+    const wood = FURNITURE.filter((f) => f.group === "wood");
+    const cat = FURNITURE.filter((f) => f.group === "cat");
+
+    function group(label, list) {
+      const wrap = document.createElement("div");
+      wrap.className = "palette-group";
+      const title = document.createElement("div");
+      title.className = "palette-group-label";
+      title.textContent = label;
+      wrap.appendChild(title);
+      const row = document.createElement("div");
+      row.className = "palette-group-row";
+      list.forEach((f) => appendPaletteItem(row, f));
+      wrap.appendChild(row);
+      palette.appendChild(wrap);
+    }
+
+    group("淺木家俬", wood);
+    group("貓／寵物", cat);
   }
 
   function renderFloorItems() {
@@ -472,8 +532,9 @@
   on($("#resetFloorBtn"), "click", () => {
     floorItems = [
       { uid: uid(), id: "sofa", name: "沙發", emoji: "🛋️", x: 30, y: 65 },
-      { uid: uid(), id: "table", name: "餐桌", emoji: "🍽️", x: 55, y: 45 },
+      { uid: uid(), id: "coffee", name: "茶几", emoji: "🪵", x: 48, y: 58 },
       { uid: uid(), id: "tv", name: "電視櫃", emoji: "📺", x: 75, y: 30 },
+      { uid: uid(), id: "cattree", name: "貓爬架", emoji: "🐱", x: 82, y: 70 },
     ];
     saveFloor();
     renderFloorItems();
@@ -484,7 +545,6 @@
     renderFloorItems();
   });
 
-  // Ensure empty state on load
   if (uploadHero) uploadHero.hidden = false;
   if (immersiveCompare) immersiveCompare.hidden = true;
   syncImmersiveChrome();
@@ -495,6 +555,7 @@
     floorItems = [
       { uid: uid(), id: "sofa", name: "沙發", emoji: "🛋️", x: 28, y: 62 },
       { uid: uid(), id: "tv", name: "電視櫃", emoji: "📺", x: 72, y: 32 },
+      { uid: uid(), id: "cattree", name: "貓爬架", emoji: "🐱", x: 82, y: 68 },
     ];
   }
   renderFloorItems();

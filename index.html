@@ -6,7 +6,7 @@
   <meta name="description" content="家俬設計 Lite：上載房間相睇裝修建議示意，2D／3D 擺位。示意非實景、非報價。" />
   <meta name="theme-color" content="#1a1612" />
   <title>家俬設計 Lite · 裝修建議／2D／3D 擺位</title>
-  <link rel="stylesheet" href="assets/css/app.css?v=20261027c" />
+  <link rel="stylesheet" href="assets/css/app.css?v=20261028a" />
   <script type="importmap">
   {
     "imports": {
@@ -56,7 +56,7 @@
 
         <div class="style-tease" id="styleTease">
           <p class="field">風格預覽（上載後可用）</p>
-          <div class="style-cards" role="group" aria-label="裝修風格預覽">
+          <div class="style-cards style-cards-5" role="group" aria-label="裝修風格預覽">
             <button type="button" class="style-card active" data-style="modern" disabled>
               <span class="swatch swatch-modern" aria-hidden="true"></span>
               <span class="style-card-label">現代簡約</span>
@@ -72,6 +72,16 @@
               <span class="style-card-label">日式</span>
               <span class="style-card-desc">低矮 · 和風</span>
             </button>
+            <button type="button" class="style-card" data-style="muji" disabled>
+              <span class="swatch swatch-muji" aria-hidden="true"></span>
+              <span class="style-card-label">無印淺木</span>
+              <span class="style-card-desc">橡木 · 暖白</span>
+            </button>
+            <button type="button" class="style-card" data-style="cat" disabled>
+              <span class="swatch swatch-cat" aria-hidden="true"></span>
+              <span class="style-card-label">貓友善</span>
+              <span class="style-card-desc">爬架 · 貓洞</span>
+            </button>
           </div>
         </div>
         <p class="disclaimer soft">⚠️ 示意非實景／非報價；AI／風格建議僅供參考。</p>
@@ -79,7 +89,7 @@
 
       <div class="immersive" id="immersiveCompare" hidden>
         <div class="style-dock" id="styleRow">
-          <div class="style-cards" role="group" aria-label="裝修風格">
+          <div class="style-cards style-cards-5" role="group" aria-label="裝修風格">
             <button type="button" class="style-card active" data-style="modern">
               <span class="swatch swatch-modern" aria-hidden="true"></span>
               <span class="style-card-label">現代簡約</span>
@@ -91,6 +101,14 @@
             <button type="button" class="style-card" data-style="japanese">
               <span class="swatch swatch-japanese" aria-hidden="true"></span>
               <span class="style-card-label">日式</span>
+            </button>
+            <button type="button" class="style-card" data-style="muji">
+              <span class="swatch swatch-muji" aria-hidden="true"></span>
+              <span class="style-card-label">無印淺木</span>
+            </button>
+            <button type="button" class="style-card" data-style="cat">
+              <span class="swatch swatch-cat" aria-hidden="true"></span>
+              <span class="style-card-label">貓友善</span>
             </button>
           </div>
         </div>
@@ -145,7 +163,7 @@
     <section id="view-floor" class="view" aria-labelledby="floor-title" hidden>
       <div class="panel">
         <h2 id="floor-title">平面擺位</h2>
-        <p class="hint">拖傢俬圖示落房間平面；位置會自動存到本機（localStorage）。雙撃圖示可刪除。</p>
+        <p class="hint">拖淺木家俬或貓／寵物圖示落房間平面；位置會自動存到本機（localStorage）。雙撃圖示可刪除。</p>
 
         <div class="floor-toolbar">
           <div class="furniture-palette" id="furniturePalette" role="list" aria-label="傢俬清單"></div>
@@ -172,7 +190,7 @@
     <section id="view-room3d" class="view" aria-labelledby="room3d-title" hidden>
       <div class="panel room3d-panel">
         <h2 id="room3d-title">3D 立體擺位</h2>
-        <p class="hint">喺立體客廳入面擺傢俬。單撃下方圖示加入；拖地板上嘅傢俬搬位；可旋轉／刪除。雙指或滑鼠拖動轉角、滾輪縮放。</p>
+        <p class="hint">立體淺木客廳＋貓友善傢俬。單撃下方圖示加入；拖地板上嘅傢俬搬位；可旋轉／刪除。雙指或滑鼠拖動轉角、滾輪縮放。</p>
 
         <div class="room3d-toolbar">
           <div class="furniture-palette room3d-palette" id="room3dPalette" role="list" aria-label="3D 傢俬"></div>
@@ -199,13 +217,13 @@
       <div class="panel">
         <h2 id="about-title">說明</h2>
         <ul class="about-list">
-          <li><strong>相片建議</strong>：上載房間相 → 揀風格 → 上下對比睇原相同裝修示意（本地濾鏡＋標籤）。</li>
-          <li><strong>平面擺位</strong>：2D 頂視圖拖沙發、餐桌、床、櫃、電視櫃。</li>
-          <li><strong>3D 擺位</strong>：立體客廳＋傢俬，Orbit 轉角，raycast 搬位（Three.js CDN）。</li>
-          <li><strong>唔使登入</strong>：MVP 載入後可用（3D 首次需連線攞 CDN）。</li>
+          <li><strong>相片建議</strong>：上載房間相 → 揀風格（含<strong>無印淺木</strong>、<strong>貓友善</strong>）→ 上下對比睇原相同裝修示意（本地濾鏡＋標籤）。</li>
+          <li><strong>平面／3D 擺位</strong>：淺木家俬（沙發、餐桌、茶几、床、櫃、電視櫃、層架）＋貓／寵物選項（爬架、牆上層架、貓洞櫃、餵食站）。</li>
+          <li><strong>風格方向</strong>：淺木無印風＋貓友善整合仍係<strong>示意</strong>，唔係影相級 AI 實景／報價。</li>
+          <li><strong>唔使登入</strong>：載入後可用（3D 首次需連線攞 Three.js CDN）。</li>
           <li><strong>免責</strong>：示意非實景、非報價、非專業設計／施工圖。</li>
         </ul>
-        <p class="muted">版本 <code>?v=20261027c</code> · 靜態站 · lingling3899/furniture-design-lite</p>
+        <p class="muted">版本 <code>?v=20261028a</code> · 靜態站 · lingling3899/furniture-design-lite</p>
       </div>
     </section>
   </main>
@@ -214,7 +232,7 @@
     <p>家俬設計 Lite · 示意原型 · 粵語繁體</p>
   </footer>
 
-  <script src="assets/js/app.js?v=20261027c" defer></script>
-  <script type="module" src="assets/js/room3d.js?v=20261027c"></script>
+  <script src="assets/js/app.js?v=20261028a" defer></script>
+  <script type="module" src="assets/js/room3d.js?v=20261028a"></script>
 </body>
 </html>

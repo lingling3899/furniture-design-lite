@@ -1,19 +1,34 @@
 /**
  * 3D 客廳擺位 — Three.js (CDN via importmap)
- * Persist: furniture-design-lite-3d-v1
+ * Persist: furniture-design-lite-3d-v2（淺木＋貓友善形狀）
  */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-const STORAGE_KEY = "furniture-design-lite-3d-v1";
+const STORAGE_KEY = "furniture-design-lite-3d-v2";
+const LEGACY_KEY = "furniture-design-lite-3d-v1";
 const ROOM = { w: 6, d: 5, h: 2.7 };
 
+const WOOD = 0xd4b896;
+const WOOD_DEEP = 0xc9a87c;
+const WOOD_LIGHT = 0xe2d0b0;
+const CREAM = 0xf0e6d8;
+const SISAL = 0xa89070;
+const BOWL = 0xc0c8d0;
+
+/** @type {{id:string,name:string,emoji:string,color:number,size:[number,number,number],group:string}[]} */
 const CATALOG = [
-  { id: "sofa", name: "沙發", emoji: "🛋️", color: 0xc4a484, size: [2.0, 0.7, 0.85] },
-  { id: "table", name: "餐桌", emoji: "🍽️", color: 0xa88b6a, size: [1.2, 0.72, 0.8] },
-  { id: "bed", name: "床", emoji: "🛏️", color: 0x8fa3b8, size: [1.6, 0.5, 2.0] },
-  { id: "cabinet", name: "櫃", emoji: "🗄️", color: 0x9a8b7a, size: [0.9, 1.5, 0.4] },
-  { id: "tv", name: "電視櫃", emoji: "📺", color: 0x6e7f8d, size: [1.4, 0.45, 0.4] },
+  { id: "sofa", name: "沙發", emoji: "🛋️", color: WOOD, size: [2.0, 0.72, 0.9], group: "wood" },
+  { id: "table", name: "餐桌", emoji: "🍽️", color: WOOD_DEEP, size: [1.2, 0.72, 0.8], group: "wood" },
+  { id: "coffee", name: "茶几", emoji: "🪵", color: WOOD, size: [0.9, 0.35, 0.55], group: "wood" },
+  { id: "bed", name: "床", emoji: "🛏️", color: WOOD_LIGHT, size: [1.6, 0.5, 2.0], group: "wood" },
+  { id: "cabinet", name: "櫃", emoji: "🗄️", color: WOOD, size: [0.95, 1.7, 0.42], group: "wood" },
+  { id: "tv", name: "電視櫃", emoji: "📺", color: WOOD_DEEP, size: [1.5, 0.42, 0.4], group: "wood" },
+  { id: "shelf", name: "層架", emoji: "📚", color: WOOD, size: [0.9, 1.4, 0.32], group: "wood" },
+  { id: "cattree", name: "貓爬架", emoji: "🐱", color: WOOD, size: [0.7, 1.8, 0.7], group: "cat" },
+  { id: "catshelf", name: "牆上層架", emoji: "🪜", color: WOOD_LIGHT, size: [0.55, 1.6, 0.28], group: "cat" },
+  { id: "catcave", name: "貓洞櫃", emoji: "🏠", color: WOOD, size: [1.0, 1.1, 0.5], group: "cat" },
+  { id: "feed", name: "餵食站", emoji: "🥣", color: WOOD_DEEP, size: [0.7, 0.28, 0.4], group: "cat" },
 ];
 
 const $ = (s) => document.querySelector(s);
@@ -26,6 +41,40 @@ function setHud(msg, cls = "ok") {
   if (!hud) return;
   hud.textContent = msg;
   hud.className = "room3d-hud " + cls;
+}
+
+function woodMat(color = WOOD, roughness = 0.72) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness,
+    metalness: 0.04,
+  });
+}
+
+function fabricMat(color = CREAM, roughness = 0.88) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness,
+    metalness: 0.02,
+  });
+}
+
+function addBox(parent, w, h, d, x, y, z, mat, cast = true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  if (cast) m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+
+function addCyl(parent, rTop, rBot, h, x, y, z, mat, cast = true) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, 16), mat);
+  m.position.set(x, y, z);
+  if (cast) m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
 }
 
 if (!canvas || !stage) {
@@ -47,14 +96,14 @@ async function boot() {
     powerPreference: "high-performance",
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0x1a222c, 1);
+  renderer.setClearColor(0xe8dfd0, 1);
   renderer.shadowMap.enabled = true;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x1a222c, 10, 22);
+  scene.fog = new THREE.Fog(0xe8dfd0, 12, 28);
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 50);
-  camera.position.set(4.2, 3.2, 5.2);
+  camera.position.set(4.0, 3.0, 5.0);
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
@@ -66,10 +115,10 @@ async function boot() {
   controls.target.set(0, 0.9, 0);
   controls.update();
 
-  // Lights
-  scene.add(new THREE.AmbientLight(0xfff5e8, 0.55));
-  const sun = new THREE.DirectionalLight(0xfff0dd, 1.05);
-  sun.position.set(3.5, 5.5, 2.5);
+  // Warm daylight loft lighting
+  scene.add(new THREE.AmbientLight(0xfff6ea, 0.72));
+  const sun = new THREE.DirectionalLight(0xfff2dd, 1.15);
+  sun.position.set(3.2, 5.8, 2.8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.near = 0.5;
@@ -79,22 +128,34 @@ async function boot() {
   sun.shadow.camera.top = 6;
   sun.shadow.camera.bottom = -6;
   scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xb8d0ff, 0.35);
-  fill.position.set(-4, 3, -2);
+  const fill = new THREE.DirectionalLight(0xffe8d0, 0.4);
+  fill.position.set(-3.5, 2.8, -1.5);
   scene.add(fill);
+  const hemi = new THREE.HemisphereLight(0xfff8f0, 0xd4c4a8, 0.35);
+  scene.add(hemi);
 
-  // Room shell
   const roomRoot = new THREE.Group();
   scene.add(roomRoot);
   buildRoom(roomRoot);
 
-  // Invisible floor for raycast
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0xd9c7a8, roughness: 0.85, metalness: 0.05 });
+  // Light oak floor with subtle plank strips
+  const floorMat = woodMat(0xe0d0b4, 0.82);
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   floor.name = "floor";
   roomRoot.add(floor);
+
+  const plankMat = woodMat(0xd8c6a4, 0.85);
+  for (let i = 0; i < 8; i++) {
+    const strip = new THREE.Mesh(
+      new THREE.PlaneGeometry(ROOM.w - 0.08, 0.015),
+      plankMat
+    );
+    strip.rotation.x = -Math.PI / 2;
+    strip.position.set(0, 0.002, -ROOM.d / 2 + 0.35 + i * 0.58);
+    roomRoot.add(strip);
+  }
 
   const furnitureRoot = new THREE.Group();
   roomRoot.add(furnitureRoot);
@@ -103,7 +164,6 @@ async function boot() {
   let items = [];
   let selected = null;
   let dragging = false;
-  let pendingType = null;
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -122,46 +182,53 @@ async function boot() {
     g.userData.furnitureId = def.id;
     g.userData.name = def.name;
 
-    const [sx, sy, sz] = def.size;
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(sx, sy, sz),
-      new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.7, metalness: 0.08 })
-    );
-    body.position.y = sy / 2;
-    body.castShadow = true;
-    body.receiveShadow = true;
-    g.add(body);
-
-    // Accent piece for TV / table / sofa
-    if (def.id === "tv") {
-      const screen = new THREE.Mesh(
-        new THREE.BoxGeometry(sx * 0.85, 0.55, 0.06),
-        new THREE.MeshStandardMaterial({ color: 0x222830, roughness: 0.4 })
-      );
-      screen.position.set(0, sy + 0.35, -sz * 0.1);
-      screen.castShadow = true;
-      g.add(screen);
-    } else if (def.id === "sofa") {
-      const back = new THREE.Mesh(
-        new THREE.BoxGeometry(sx, sy * 0.7, sz * 0.28),
-        new THREE.MeshStandardMaterial({ color: def.color * 0.9 || def.color, roughness: 0.75 })
-      );
-      back.position.set(0, sy * 0.85, -sz * 0.35);
-      back.castShadow = true;
-      g.add(back);
-    } else if (def.id === "bed") {
-      const pillow = new THREE.Mesh(
-        new THREE.BoxGeometry(sx * 0.7, 0.12, 0.35),
-        new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.9 })
-      );
-      pillow.position.set(0, sy + 0.06, -sz * 0.35);
-      g.add(pillow);
+    switch (def.id) {
+      case "sofa":
+        buildSofa(g);
+        break;
+      case "table":
+        buildTable(g);
+        break;
+      case "coffee":
+        buildCoffee(g);
+        break;
+      case "bed":
+        buildBed(g);
+        break;
+      case "cabinet":
+        buildCabinet(g);
+        break;
+      case "tv":
+        buildTv(g);
+        break;
+      case "shelf":
+        buildShelf(g);
+        break;
+      case "cattree":
+        buildCatTree(g);
+        break;
+      case "catshelf":
+        buildCatShelf(g);
+        break;
+      case "catcave":
+        buildCatCave(g);
+        break;
+      case "feed":
+        buildFeed(g);
+        break;
+      default:
+        addBox(g, def.size[0], def.size[1], def.size[2], 0, def.size[1] / 2, 0, woodMat(def.color));
     }
 
-    // Selection ring (hidden by default)
+    const [sx, , sz] = def.size;
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(Math.max(sx, sz) * 0.55, Math.max(sx, sz) * 0.62, 32),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+      })
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
@@ -170,6 +237,164 @@ async function boot() {
     g.add(ring);
 
     return g;
+  }
+
+  function buildSofa(g) {
+    const wood = woodMat(WOOD_DEEP, 0.7);
+    const fabric = fabricMat(0xefe6da, 0.9);
+    const seat = fabricMat(0xf5eee4, 0.88);
+    // seat base
+    addBox(g, 2.0, 0.28, 0.82, 0, 0.28, 0, seat);
+    // cushion
+    addBox(g, 1.9, 0.14, 0.72, 0, 0.48, 0.02, fabric);
+    // back
+    addBox(g, 2.0, 0.55, 0.22, 0, 0.62, -0.32, fabric);
+    // arms
+    addBox(g, 0.16, 0.42, 0.82, -0.92, 0.48, 0, fabric);
+    addBox(g, 0.16, 0.42, 0.82, 0.92, 0.48, 0, fabric);
+    // wood legs
+    [[-0.85, 0.08, -0.32], [0.85, 0.08, -0.32], [-0.85, 0.08, 0.32], [0.85, 0.08, 0.32]].forEach(
+      ([x, y, z]) => addCyl(g, 0.035, 0.04, 0.16, x, y, z, wood)
+    );
+  }
+
+  function buildTable(g) {
+    const top = woodMat(WOOD, 0.65);
+    const leg = woodMat(WOOD_DEEP, 0.7);
+    addBox(g, 1.2, 0.05, 0.8, 0, 0.72, 0, top);
+    [[-0.5, 0.36, -0.32], [0.5, 0.36, -0.32], [-0.5, 0.36, 0.32], [0.5, 0.36, 0.32]].forEach(
+      ([x, y, z]) => addCyl(g, 0.035, 0.04, 0.72, x, y, z, leg)
+    );
+  }
+
+  function buildCoffee(g) {
+    const top = woodMat(WOOD_LIGHT, 0.68);
+    const leg = woodMat(WOOD_DEEP, 0.72);
+    addBox(g, 0.9, 0.04, 0.55, 0, 0.34, 0, top);
+    [[-0.35, 0.17, -0.2], [0.35, 0.17, -0.2], [-0.35, 0.17, 0.2], [0.35, 0.17, 0.2]].forEach(
+      ([x, y, z]) => addCyl(g, 0.028, 0.032, 0.34, x, y, z, leg)
+    );
+  }
+
+  function buildBed(g) {
+    const frame = woodMat(WOOD, 0.7);
+    const sheet = fabricMat(0xfaf7f2, 0.92);
+    const pillow = fabricMat(0xf2efe8, 0.9);
+    addBox(g, 1.6, 0.28, 2.0, 0, 0.22, 0, frame);
+    addBox(g, 1.5, 0.12, 1.85, 0, 0.42, 0.02, sheet);
+    addBox(g, 0.55, 0.12, 0.32, -0.35, 0.52, -0.72, pillow);
+    addBox(g, 0.55, 0.12, 0.32, 0.35, 0.52, -0.72, pillow);
+    addBox(g, 1.6, 0.55, 0.08, 0, 0.55, -0.96, frame);
+  }
+
+  function buildCabinet(g) {
+    const body = woodMat(WOOD, 0.7);
+    const slat = woodMat(WOOD_DEEP, 0.65);
+    addBox(g, 0.95, 1.7, 0.4, 0, 0.85, 0, body);
+    // vertical slat accent on face
+    for (let i = 0; i < 5; i++) {
+      addBox(g, 0.04, 1.5, 0.03, -0.36 + i * 0.18, 0.9, 0.22, slat, false);
+    }
+    addBox(g, 0.95, 0.04, 0.42, 0, 1.68, 0, woodMat(WOOD_LIGHT, 0.68));
+  }
+
+  function buildTv(g) {
+    const consoleM = woodMat(WOOD, 0.68);
+    const screenM = new THREE.MeshStandardMaterial({
+      color: 0x1a1e24,
+      roughness: 0.35,
+      metalness: 0.2,
+    });
+    addBox(g, 1.5, 0.42, 0.4, 0, 0.21, 0, consoleM);
+    // open niches
+    addBox(g, 0.55, 0.22, 0.32, -0.4, 0.2, 0.02, woodMat(WOOD_DEEP, 0.75), false);
+    addBox(g, 0.55, 0.22, 0.32, 0.4, 0.2, 0.02, woodMat(WOOD_DEEP, 0.75), false);
+    addBox(g, 1.2, 0.7, 0.05, 0, 0.85, -0.05, screenM);
+  }
+
+  function buildShelf(g) {
+    const wood = woodMat(WOOD, 0.7);
+    const side = woodMat(WOOD_DEEP, 0.72);
+    addBox(g, 0.06, 1.4, 0.3, -0.42, 0.7, 0, side);
+    addBox(g, 0.06, 1.4, 0.3, 0.42, 0.7, 0, side);
+    [0.08, 0.45, 0.82, 1.18, 1.38].forEach((y) => {
+      addBox(g, 0.88, 0.035, 0.3, 0, y, 0, wood);
+    });
+  }
+
+  function buildCatTree(g) {
+    const post = woodMat(SISAL, 0.85);
+    const wood = woodMat(WOOD, 0.7);
+    addCyl(g, 0.06, 0.06, 1.7, 0, 0.85, 0, post);
+    addCyl(g, 0.05, 0.05, 1.2, 0.22, 0.7, 0.15, post);
+    // platforms
+    addBox(g, 0.55, 0.05, 0.55, 0, 0.35, 0, wood);
+    addBox(g, 0.48, 0.05, 0.48, 0.1, 0.9, 0.08, wood);
+    addBox(g, 0.42, 0.05, 0.42, -0.05, 1.4, -0.05, wood);
+    addBox(g, 0.55, 0.05, 0.55, 0, 0.05, 0, wood);
+    // small cave cylinder on mid
+    const cave = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.18, 0.28, 16, 1, true),
+      woodMat(WOOD_DEEP, 0.75)
+    );
+    cave.rotation.z = Math.PI / 2;
+    cave.position.set(0.05, 0.55, 0.05);
+    cave.castShadow = true;
+    g.add(cave);
+  }
+
+  function buildCatShelf(g) {
+    const wood = woodMat(WOOD_LIGHT, 0.7);
+    // stacked wall steps (floor-placed near wall)
+    const steps = [
+      [0, 0.45, 0.12],
+      [0.08, 0.85, -0.02],
+      [-0.05, 1.25, 0.05],
+      [0.1, 1.55, -0.05],
+    ];
+    steps.forEach(([x, y, z], i) => {
+      const w = 0.5 - i * 0.02;
+      addBox(g, w, 0.05, 0.26, x, y, z, wood);
+      // small bracket
+      addBox(g, 0.04, 0.12, 0.04, x - w * 0.35, y - 0.06, z, woodMat(WOOD_DEEP, 0.7), false);
+      addBox(g, 0.04, 0.12, 0.04, x + w * 0.35, y - 0.06, z, woodMat(WOOD_DEEP, 0.7), false);
+    });
+  }
+
+  function buildCatCave(g) {
+    const body = woodMat(WOOD, 0.7);
+    const dark = new THREE.MeshStandardMaterial({
+      color: 0x2a2420,
+      roughness: 0.9,
+      metalness: 0.02,
+    });
+    addBox(g, 1.0, 1.1, 0.5, 0, 0.55, 0, body);
+    // arched dark opening (approx with box + half-cyl)
+    addBox(g, 0.42, 0.45, 0.08, 0, 0.28, 0.26, dark, false);
+    const arch = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.21, 0.21, 0.08, 16, 1, false, 0, Math.PI),
+      dark
+    );
+    arch.rotation.x = Math.PI / 2;
+    arch.position.set(0, 0.5, 0.26);
+    g.add(arch);
+    // soft bed hint
+    addBox(g, 0.35, 0.04, 0.3, 0, 0.06, 0.05, fabricMat(0xb8b0a8, 0.95), false);
+    // upper cubby
+    addBox(g, 0.35, 0.28, 0.08, 0, 0.85, 0.26, dark, false);
+  }
+
+  function buildFeed(g) {
+    const wood = woodMat(WOOD_DEEP, 0.7);
+    addBox(g, 0.7, 0.12, 0.4, 0, 0.12, 0, wood);
+    addBox(g, 0.65, 0.04, 0.35, 0, 0.2, 0, woodMat(WOOD, 0.68));
+    const bowlMat = new THREE.MeshStandardMaterial({
+      color: BOWL,
+      roughness: 0.35,
+      metalness: 0.45,
+    });
+    addCyl(g, 0.09, 0.07, 0.06, -0.16, 0.25, 0, bowlMat);
+    addCyl(g, 0.09, 0.07, 0.06, 0.16, 0.25, 0, bowlMat);
   }
 
   function clampPos(x, z, typeId) {
@@ -198,8 +423,16 @@ async function boot() {
   }
 
   function spawn(typeId, x = 0, z = 0, rot = 0, id = null) {
+    if (!CATALOG.some((c) => c.id === typeId)) typeId = "sofa";
     const mesh = makeFurniture(typeId);
-    const p = clampPos(x, z, typeId);
+    let sx = x;
+    let sz = z;
+    // wall shelves prefer back wall
+    if (typeId === "catshelf" && Math.abs(x) < 0.01 && Math.abs(z) < 0.01) {
+      sx = -1.8;
+      sz = -2.0;
+    }
+    const p = clampPos(sx, sz, typeId);
     mesh.position.set(p.x, 0, p.z);
     mesh.rotation.y = rot;
     furnitureRoot.add(mesh);
@@ -239,8 +472,10 @@ async function boot() {
     clearAll();
     spawn("sofa", -1.2, 1.2, Math.PI);
     spawn("tv", 0, -2.0, 0);
-    spawn("table", 1.3, 0.2, 0);
-    setHud("已重置示範擺位");
+    spawn("coffee", -0.9, 0.4, 0);
+    spawn("cattree", 1.8, -1.5, 0);
+    spawn("catcave", 2.0, 0.8, -Math.PI / 2);
+    setHud("已重置示範擺位（淺木＋貓友善）");
   }
 
   function save() {
@@ -256,45 +491,73 @@ async function boot() {
     } catch (_) { /* ignore */ }
   }
 
+  function loadFrom(raw) {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr) || !arr.length) return false;
+    arr.forEach((row) => {
+      if (!row || !row.id) return;
+      spawn(row.id, row.x || 0, row.z || 0, row.rot || 0, row.uid);
+    });
+    selectItem(null);
+    return true;
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      const arr = JSON.parse(raw);
-      if (!Array.isArray(arr) || !arr.length) return false;
-      arr.forEach((row) => {
-        if (!row || !row.id) return;
-        spawn(row.id, row.x || 0, row.z || 0, row.rot || 0, row.uid);
-      });
-      selectItem(null);
-      return true;
+      if (raw && loadFrom(raw)) return true;
+      // graceful migrate from v1
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy && loadFrom(legacy)) {
+        save();
+        return true;
+      }
+      return false;
     } catch (_) {
       return false;
     }
   }
 
-  // Palette UI
+  // Palette UI — two groups
   if (paletteEl) {
     paletteEl.innerHTML = "";
-    CATALOG.forEach((f) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "palette-item";
-      btn.dataset.id = f.id;
-      btn.setAttribute("role", "listitem");
-      btn.innerHTML = `<span class="ico" style="background:#${f.color.toString(16).padStart(6, "0")}33">${f.emoji}</span><span class="label">${f.name}</span>`;
-      btn.addEventListener("click", () => {
-        pendingType = f.id;
-        [...paletteEl.querySelectorAll(".palette-item")].forEach((b) =>
-          b.classList.toggle("selected", b.dataset.id === f.id)
-        );
-        const item = spawn(f.id, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.2, 0);
-        setHud(`已加入${f.name} · 拖佢搬位`);
-        // brief highlight already via select
-        void item;
+    function addGroup(label, list) {
+      const wrap = document.createElement("div");
+      wrap.className = "palette-group";
+      const title = document.createElement("div");
+      title.className = "palette-group-label";
+      title.textContent = label;
+      wrap.appendChild(title);
+      const row = document.createElement("div");
+      row.className = "palette-group-row";
+      list.forEach((f) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "palette-item";
+        btn.dataset.id = f.id;
+        btn.setAttribute("role", "listitem");
+        const hex = "#" + f.color.toString(16).padStart(6, "0");
+        btn.innerHTML = `<span class="ico" style="background:${hex}33">${f.emoji}</span><span class="label">${f.name}</span>`;
+        btn.addEventListener("click", () => {
+          [...paletteEl.querySelectorAll(".palette-item")].forEach((b) =>
+            b.classList.toggle("selected", b.dataset.id === f.id)
+          );
+          let x = (Math.random() - 0.5) * 1.5;
+          let z = (Math.random() - 0.5) * 1.2;
+          if (f.id === "catshelf") {
+            x = -1.5 + Math.random() * 0.4;
+            z = -2.0;
+          }
+          spawn(f.id, x, z, 0);
+          setHud(`已加入${f.name} · 拖佢搬位`);
+        });
+        row.appendChild(btn);
       });
-      paletteEl.appendChild(btn);
-    });
+      wrap.appendChild(row);
+      paletteEl.appendChild(wrap);
+    }
+    addGroup("淺木家俬", CATALOG.filter((c) => c.group === "wood"));
+    addGroup("貓／寵物", CATALOG.filter((c) => c.group === "cat"));
   }
 
   const bind = (id, fn) => {
@@ -372,12 +635,11 @@ async function boot() {
       dragging = false;
       controls.enabled = true;
       save();
-      try { canvas.releasePointerCapture?.(ev.pointerId); } catch (_) {}
+      try {
+        canvas.releasePointerCapture?.(ev.pointerId);
+      } catch (_) {}
     }
-    // Double-tap delete (quick second tap on same selected)
-    if (pointerDownAt && !moved && Date.now() - pointerDownAt.t < 280) {
-      // single tap already selected via pick
-    }
+    void moved;
     pointerDownAt = null;
   }
   canvas.addEventListener("pointerup", endDrag);
@@ -422,7 +684,6 @@ async function boot() {
     setActive(e.detail && e.detail.view === "room3d");
   });
 
-  // If already on 3D tab (rare), or prepare
   const view3d = $("#view-room3d");
   if (view3d && !view3d.hidden) setActive(true);
 
@@ -432,20 +693,13 @@ async function boot() {
     setHud("已載入上次 3D 擺位");
   }
 
-  // Expose for debug
   window.__fdl3d = { spawn, clearAll, resetDemo, items };
-  setHud("3D 就緒 · 撳傢俬加入 · 拖搬位 · 雙撃刪除");
-  console.info("[room3d] ready");
+  setHud("3D 就緒 · 淺木＋貓友善 · 拖搬位 · 雙撃刪除");
+  console.info("[room3d] ready v2");
 }
 
 function buildRoom(root) {
-  const wallMat = new THREE.MeshStandardMaterial({
-    color: 0xf2ebe0,
-    roughness: 0.9,
-    metalness: 0.02,
-    side: THREE.BackSide,
-  });
-  // Use inward-facing box shell without floor (floor separate)
+  const wallColor = 0xf7f2ea;
   const hw = ROOM.w / 2;
   const hd = ROOM.d / 2;
   const hh = ROOM.h / 2;
@@ -453,7 +707,7 @@ function buildRoom(root) {
   function wall(w, h, x, y, z, rotY = 0) {
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(w, h),
-      new THREE.MeshStandardMaterial({ color: 0xf2ebe0, roughness: 0.92, metalness: 0.02 })
+      new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.94, metalness: 0.02 })
     );
     m.position.set(x, y, z);
     m.rotation.y = rotY;
@@ -462,65 +716,51 @@ function buildRoom(root) {
     return m;
   }
 
-  // Back (+z? we use -z as window wall)
-  wall(ROOM.w, ROOM.h, 0, hh, -hd); // facing +z by default... Plane faces +z
-  // Actually PlaneGeometry faces +Z. For back wall at -z, rotate 0 means facing camera from -z looking +z — good for inside.
-  // Left wall at -x: rotate +90°
+  wall(ROOM.w, ROOM.h, 0, hh, -hd);
   wall(ROOM.d, ROOM.h, -hw, hh, 0, Math.PI / 2);
-  // Right wall at +x
   wall(ROOM.d, ROOM.h, hw, hh, 0, -Math.PI / 2);
-  // Front wall (door) at +z — facing -z
   wall(ROOM.w, ROOM.h, 0, hh, hd, Math.PI);
 
-  // Ceiling
   const ceil = new THREE.Mesh(
     new THREE.PlaneGeometry(ROOM.w, ROOM.d),
-    new THREE.MeshStandardMaterial({ color: 0xfaf7f2, roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: 0xfffaf4, roughness: 1 })
   );
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ROOM.h;
   root.add(ceil);
 
-  // Window bright panel on back wall
+  // Bright window
   const win = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.2, 1.2),
+    new THREE.PlaneGeometry(2.4, 1.3),
     new THREE.MeshStandardMaterial({
-      color: 0xb8d4f0,
-      emissive: 0x88aacc,
-      emissiveIntensity: 0.45,
-      roughness: 0.4,
+      color: 0xd8eaf8,
+      emissive: 0xc8daf0,
+      emissiveIntensity: 0.55,
+      roughness: 0.35,
     })
   );
-  win.position.set(0.8, 1.5, -hd + 0.02);
+  win.position.set(0.8, 1.55, -hd + 0.05);
   root.add(win);
 
-  // Window frame
   const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(2.35, 1.35, 0.06),
-    new THREE.MeshStandardMaterial({ color: 0xe8dcc8, roughness: 0.7 })
+    new THREE.BoxGeometry(2.55, 1.45, 0.06),
+    woodMat(0xe8dcc8, 0.7)
   );
-  frame.position.set(0.8, 1.5, -hd + 0.04);
+  frame.position.set(0.8, 1.55, -hd + 0.04);
   root.add(frame);
-  // punch "glass" by overlaying again smaller — already have win in front
-  win.position.z = -hd + 0.05;
 
-  // Door opening darker cut on front wall (visual only)
   const door = new THREE.Mesh(
     new THREE.PlaneGeometry(0.95, 2.1),
-    new THREE.MeshStandardMaterial({ color: 0x3a322c, roughness: 0.8 })
+    woodMat(0xc4a888, 0.75)
   );
   door.position.set(-1.6, 1.05, hd - 0.02);
   door.rotation.y = Math.PI;
   root.add(door);
 
-  // Baseboard lines
-  const trimMat = new THREE.MeshStandardMaterial({ color: 0xddd0c0, roughness: 0.8 });
-  [[0, -hd + 0.03, 0], [0, hd - 0.03, Math.PI]].forEach(([z, zz, ry]) => {
+  const trimMat = woodMat(0xe6d8c4, 0.8);
+  [ -hd + 0.03, hd - 0.03 ].forEach((zz) => {
     const t = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w, 0.08, 0.04), trimMat);
     t.position.set(0, 0.04, zz);
-    t.rotation.y = ry;
     root.add(t);
   });
-
-  void wallMat;
 }

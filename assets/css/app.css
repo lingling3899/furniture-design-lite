@@ -331,6 +331,41 @@ body.mode-immersive .wrap {
   background:
     linear-gradient(135deg, #f2e8d8 0%, #d4c4a8 40%, #c4a484 70%, #8b6b4a 100%);
 }
+.swatch-muji {
+  background:
+    linear-gradient(135deg, #faf6f0 0%, #e8d9c0 35%, #d4b896 70%, #c9a87c 100%);
+}
+.swatch-cat {
+  background:
+    linear-gradient(135deg, #f5f0e6 0%, #d4b896 40%, #c8d5c0 70%, #9bb8a0 100%);
+}
+.style-cards-5 {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (min-width: 520px) {
+  .style-cards-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+.palette-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.palette-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  padding: 2px 2px 0;
+}
+.palette-group-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 body.mode-immersive .style-dock {
   max-width: 720px;
@@ -562,8 +597,10 @@ body.mode-immersive .style-card-desc { color: #a89888; }
 }
 .furniture-palette {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 10px;
 }
 .palette-item {
   display: flex;
